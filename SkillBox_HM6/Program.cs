@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SkillBox_HM6
 {
@@ -133,11 +134,11 @@ namespace SkillBox_HM6
         /// </summary>
         public static void Menu()
         {
-            Console.WriteLine("Пожалуйста, выберите операцию: \n1 — создать файл \n2 - добавить новую запись \n3 — вывести данные на экран\n4 - Удалить файл\n");
+            Console.WriteLine("Пожалуйста, выберите операцию: \n1 — создать файл \n2 - добавить новую запись \n3 — вывести данные на экран\n4 - Удалить файл\n5 - Exit\n");
 
             byte menu;
 
-            while (!byte.TryParse(Console.ReadLine(), out menu) || menu <= 0 || menu > 4)
+            while (!byte.TryParse(Console.ReadLine(), out menu) || menu <= 0 || menu > 5)
             {
                 Console.WriteLine("Ошибка ввода! Введите целое число...");
                 continue;
@@ -154,20 +155,24 @@ namespace SkillBox_HM6
             switch (menu)
                 {
                     case 1:
-                        CreateFail();
-                        break;
+                    CreateFail();
+                    break;
                     case 2:
-                        AddStreamWriter();
-                        break;
-                case 3:
+                    AddStreamWriter();
+                    break;
+                    case 3:
                     ReadFile();
                     break;
-                case 4:
+                    case 4:
                     DelateFile();
+                    break;
+                    case 5:
+                    QuitProgramm();
                     break;
                 }
 
         }
+
         /// <summary>
         /// Новая запись о сотруднике
         /// </summary>
@@ -186,19 +191,21 @@ namespace SkillBox_HM6
                     string path = Path.Combine(Environment.CurrentDirectory, "test.txt");
 
                     using (FileStream file = File.Create(path))
-                        Thread.Sleep(1000);
+                    file.Close();
+                    Thread.Sleep(1000);
                     Console.WriteLine("File created! " + Environment.CurrentDirectory, path);
-                    //Environment.CurrentDirectory, path - показывает путь в консоли
+                    //Environment.CurrentDirectory, path - показывает полный путь к файлуу
                     Menu();
                 }
 
             }
             catch (Exception errorpath)
             {
-                Console.WriteLine(errorpath.Message);
-                throw;
+                Console.WriteLine("Процесс не может получить доступ к файлу 'test.txt', потому что он используется другим процессом" + errorpath.Message);
+                return;
             }
         }
+
         /// <summary>
         /// Добавить новых сотрудников
         /// </summary>
@@ -206,28 +213,26 @@ namespace SkillBox_HM6
         {
             try
             {
-                using (StreamReader read = new StreamReader("test.txt"))
+                string note = string.Empty;
+                worker.ID = 1;
+
+                using (StreamReader read = new StreamReader(path))
                 {
                     String line;
 
                     while ((line = read.ReadLine()) != null)
                     {
-                        worker.ID++; // считывем кол-во строк, чтобы дозаписать новую строку с новым ID
+                        note += $"{worker.ID += 1}"; // считывем кол-во строк, чтобы дозаписать новую строку с новым ID
                     }
+                    read.Close();
                 }
 
-                using (StreamWriter addNote = File.AppendText("test.txt"))
+                using (StreamWriter addNote = File.AppendText(path))
                 {
-                    //sw.WriteLine("ID: {0} FirstName: {1} LastName: {2} Height: {3}", worker.ID.ToString(), worker.FirstName, worker.LastName, worker.Height);
-
                     char key = 'y';
 
                     do
                     {
-                        string note = string.Empty;
-
-                        note += $"{worker.ID += 1}";
-
                         note += $"{worker.AddTimeorDateNote = DateTime.UtcNow}";
 
                         Console.WriteLine("Enter your first name: ");
@@ -277,6 +282,7 @@ namespace SkillBox_HM6
                         worker.City = Console.ReadLine();
                         note += $"{worker.City}";
 
+                        #region NOTE
                         //writeFile.WriteLine("ID: {0} TimeDate: {1} FirstName: {2} LastName: {3} MiddleName" +
                         //                    "{4} Age {5} Height: {6} BirthDay {7} City: {8}",
                         //                    worker.ID.ToString(),
@@ -288,6 +294,7 @@ namespace SkillBox_HM6
                         //                    worker.Height,
                         //                    worker.DateBirthDay,
                         //                    worker.City);
+                        #endregion
 
                         addNote.WriteLine("{0} {1} {2} {3} {4} {5} {6} {7} {8}",
                                                 worker.ID.ToString() + "#",
@@ -299,17 +306,19 @@ namespace SkillBox_HM6
                                                 worker.Height + "#",
                                                 worker.DateBirthDay.ToShortDateString() + "#",
                                                 "город " + worker.City, Encoding.UTF8);
-
+                        
                         Console.Write("\nПродожить y/n\n"); key = Console.ReadKey(true).KeyChar;
                         if (key == 'y')
                         {
+                            note += $"{worker.ID += 1}";
                             continue;
                         }
                         else if (key == 'n')
                         {
                             Console.WriteLine("\nSee you...");
                             Thread.Sleep(1000); // 1000 = 1 секунда. Делает задержку экрана
-                            break;
+                            addNote.Close();
+                            Menu();
                         }
                     } while (char.ToLower(key) == 'y');
 
@@ -317,10 +326,11 @@ namespace SkillBox_HM6
             }
             catch (FileNotFoundException noFile)
             {
-                Console.WriteLine(noFile.Message);
+                Console.WriteLine(noFile.Message + "Файл будет создан автоматически!");
                 CreateFail();
             }
         }
+
         /// <summary>
         /// Чтение файла
         /// </summary>
@@ -336,6 +346,7 @@ namespace SkillBox_HM6
                     while ((line = readFile.ReadLine()) != null)
                     {
                         i++; // общее кол-во строк
+
                         worker.ID++; // считывем кол-во строк, чтобы дозаписать новую строку с новым ID
 
                         string[] data = line.Split('\t', '#');
@@ -347,9 +358,11 @@ namespace SkillBox_HM6
 
                     }
                     Console.WriteLine("Line counts = " + i.ToString());
-                    Console.WriteLine("Press any key...");
-                    Console.ReadKey();
+                    readFile.Close();
                 }
+                Console.WriteLine("Please wait 5 seconds...");
+                Thread.Sleep(5000);
+                Menu();
             }
             catch (FileNotFoundException error)
             {
@@ -358,6 +371,7 @@ namespace SkillBox_HM6
                 Menu();
             }
         }
+
         /// <summary>
         /// Удаление файла
         /// </summary>
@@ -368,6 +382,7 @@ namespace SkillBox_HM6
                 File.Delete("test.txt");
                 Console.WriteLine("Файл успешно удалён!");
                 Thread.Sleep(2000);
+                Menu();
             }
             else
             {
@@ -375,6 +390,14 @@ namespace SkillBox_HM6
                 Thread.Sleep(2000);
             }
             
+        }
+
+        /// <summary>
+        /// Exit
+        /// </summary>
+        static public void QuitProgramm()
+        {
+            Environment.Exit(0);
         }
     }
 }
